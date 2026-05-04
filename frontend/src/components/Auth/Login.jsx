@@ -5,8 +5,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 
-
-const AUTH_BASE = "http://localhost:3000/api/auth";
+const AUTH_BASE = `${import.meta.env.VITE_API_URL}/api/auth`
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

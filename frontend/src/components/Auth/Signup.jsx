@@ -46,7 +46,7 @@ const Signup = () => {
 
     try {
       setIsSubmitting(true);
-      const result = await axios.post('http://localhost:3000/api/auth/signup',{
+      const result = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/signup`,{
         name,
         email,
         password

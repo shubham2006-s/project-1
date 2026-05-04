@@ -101,7 +101,7 @@ const Profile = () => {
       setPwSubmitting(true);
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:3000/user/change-password",
+        `${import.meta.env.VITE_API_URL}/user/change-password`,
         { currentPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
