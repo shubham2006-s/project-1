@@ -8,6 +8,7 @@ dotenv.config({path: ".env"});
   import UserRoutes from "./routes/User.js";
 
   const app = express();
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json())
   app.use(cors({
@@ -32,9 +33,9 @@ dotenv.config({path: ".env"});
   });
 
   mongoose
-    .connect("mongodb+srv://shubhamsavsaviya123_db_user:ZA6ENPAoDR6H6zFe@cluster0.ryol7y5.mongodb.net/store?retryWrites=true&w=majority")
+    .connect(process.env.MONGO_URI)
     .then(() => {
-      app.listen(3000);
+      app.listen(PORT);
     })
     .catch((err) => {
       console.error(err);
