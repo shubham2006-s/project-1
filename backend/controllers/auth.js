@@ -31,7 +31,7 @@ export const postSignUp = async (req, res, next) => {
       password: hashPassword,
     });
     const result = await user.save();
-    await sendEmailOTP(email, result._id.toString(),"signup");
+    await sendEmailOTP(email, result._id.toString(),"signup",name);
     res.status(201).json({ message: "User created", userId: result._id });
   } catch (error) {
     if (!error.statusCode) {

@@ -21,7 +21,7 @@ const getTransporter = async () => {
   return transporter;
 };
 
-export const sendEmailOTP = async (email, otp,type) => {
+export const sendEmailOTP = async (email, otp,type,name) => {
   let subject = "";
   if(type === "login"){
     subject = `
