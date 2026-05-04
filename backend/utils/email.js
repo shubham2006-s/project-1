@@ -301,6 +301,7 @@ export const sendEmailOTP = async (email, otp,type,name) => {
       subject: "Your OTP Code",
       html: subject
     });
+    console.log("NEW CODE DEPLOYED v2");
   } catch (err) {
     console.error("Email send error:", err);
     throw new Error("Failed to send OTP email");
