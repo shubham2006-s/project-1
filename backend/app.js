@@ -10,17 +10,15 @@ dotenv.config({path: ".env"});
   const app = express();
 
   app.use(express.json())
-  app.use(cors());
-
-  app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'OPTIONS, GET, POST, PUT, PATCH, DELETE'
-    );
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-  });
+  app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://project-1-gray-three.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 
   app.use("/api/auth", AuthRoutes);
   app.use("/user", UserRoutes);
