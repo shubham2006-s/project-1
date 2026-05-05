@@ -119,15 +119,16 @@ const Navbar = () => {
         </nav>
 
         {/* Search — navigates to home catalog with ?q= for shareable, filterable results */}
-        <div className="flex min-w-0 flex-1 items-center justify-center">
+        <div className="flex w-full items-center justify-center px-3 sm:px-4">
           <form
             role="search"
             onSubmit={submitSearch}
-            className="relative w-full max-w-xl"
+            className="relative w-full sm:max-w-xl"
             aria-label="Search products"
           >
-            <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-white/60">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+            {/* Icon */}
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/60">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M21 21l-4.3-4.3m1.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"
                   stroke="currentColor"
@@ -136,20 +137,43 @@ const Navbar = () => {
                 />
               </svg>
             </span>
+
+            {/* Input */}
             <input
               name="q"
               type="search"
-              autoComplete="off"
-              enterKeyHint="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search products, brands and more…"
-              className="h-11 w-full rounded-full bg-white/10 py-2 pl-10 pr-14 text-sm text-white placeholder:text-white/60 ring-1 ring-white/15 outline-none transition focus:bg-white/15 focus:ring-2 focus:ring-sky-300/70"
+              placeholder="Search products..."
+              className="
+        h-10 sm:h-11
+        w-full
+        rounded-full
+        bg-white/10
+        pl-9 pr-12
+        text-sm
+        text-white
+        placeholder:text-white/60
+        ring-1 ring-white/15
+        outline-none
+        focus:bg-white/15
+        focus:ring-2 focus:ring-sky-300/70
+      "
             />
+
+            {/* Button */}
             <button
               type="submit"
-              className="absolute right-1.5 top-1/2 z-10 inline-flex h-8 min-w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 px-3 text-xs font-extrabold text-white ring-1 ring-white/20 transition hover:bg-white/25"
-              aria-label="Submit search"
+              className="
+        absolute right-1 top-1/2 -translate-y-1/2
+        h-7 sm:h-8
+        px-2 sm:px-3
+        rounded-full
+        bg-white/15
+        text-[10px] sm:text-xs
+        font-bold
+        text-white
+      "
             >
               Go
             </button>
