@@ -5,22 +5,22 @@ let transporter;
 const getTransporter = async () => {
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+      service: "gmail", // ✅ use service instead of host/port
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        pass: process.env.EMAIL_PASS, // Gmail App Password
       },
     });
 
-    // optional: verify once
-    await transporter.verify();
-    console.log("SMTP ready");
+    try {
+      await transporter.verify();
+      console.log("SMTP ready");
+    } catch (err) {
+      console.error("SMTP verify failed:", err.message);
+    }
   }
   return transporter;
 };
-
 export const sendEmailOTP = async (email, otp,type,name) => {
   let subject = "";
   if(type === "login"){
@@ -242,7 +242,7 @@ export const sendEmailOTP = async (email, otp,type,name) => {
               <!-- CTA Button -->
               <tr>
                 <td align="center" style="padding:20px 0;">
-                  <a href="http://localhost:5173"
+                  <a href="https://project-1-9zb2.onrender.com"
                      style="
                       display:inline-block;
                       padding:12px 22px;
@@ -304,6 +304,6 @@ export const sendEmailOTP = async (email, otp,type,name) => {
     console.log("NEW CODE DEPLOYED v2");
   } catch (err) {
     console.error("Email send error:", err);
-    throw new Error("Failed to send OTP email");
+    //throw new Error("Failed to send OTP email");
   }
 };
