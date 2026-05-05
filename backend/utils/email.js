@@ -436,9 +436,10 @@ const getEmailTemplate = (otp, type, name) => {
 
 // 🔹 main function
 export const sendEmailOTP = async (email, otp, type, name) => {
+  console.log("Sending to:", email);  
   try {
     await resend.emails.send({
-      from: "support@shopnow.com", // ✅ required
+      from: "onboarding@resend.dev", // ✅ required
       to: email,
       subject:
         type === "login"
