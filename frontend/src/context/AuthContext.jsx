@@ -19,8 +19,6 @@ export const AuthProvider = ({ children }) => {
     if (logoutTimer.current) {
       clearTimeout(logoutTimer.current);
     }
-
-    window.location.href = "/login";
   };
 
   // 🔥 auto logout setup
