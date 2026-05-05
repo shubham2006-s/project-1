@@ -411,7 +411,7 @@ const Login = () => {
                   <h2 className="text-xl font-semibold tracking-tight text-slate-900">Check email &amp; messages</h2>
                   <p className="mt-1 text-sm text-slate-600">
                     Enter the 6-digit code we sent to your <span className="font-semibold text-slate-800">email</span>{" "}
-                    and <span className="font-semibold text-slate-800">SMS</span> (same code on both).
+                    
                   </p>
                 </div>
 
@@ -425,29 +425,7 @@ const Login = () => {
                       <p className="truncate text-sm font-semibold text-slate-900">{maskedEmail || "—"}</p>
                     </div>
                   </div>
-                  <div className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-                      <FiSmartphone className="text-lg" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Text message</p>
-                      <p className="truncate text-sm font-semibold text-slate-900 tabular-nums">
-                        {maskedPhone || "***-***-****"}
-                      </p>
-                    </div>
-                  </div>
                 </div>
-
-                {!demoOtp ? (
-                  <p className="mt-2 text-center text-[11px] font-medium text-slate-500">
-                    <span className="font-semibold text-slate-700">Where is the code?</span> It is printed in the{" "}
-                    <span className="font-semibold text-slate-700">backend</span> terminal (the window where you ran{" "}
-                    <code className="rounded bg-slate-100 px-1 font-mono text-[10px]">npm start</code> inside{" "}
-                    <code className="rounded bg-slate-100 px-1 font-mono text-[10px]">backend/</code>
-                    ) — not the Vite / frontend terminal. Look for a box titled{" "}
-                    <span className="font-semibold">SHOPNOW — login OTP</span>.
-                  </p>
-                ) : null}
 
                 {/* OTP entry — same login column */}
                 <div className="mt-5 rounded-2xl border border-indigo-200/80 bg-gradient-to-b from-indigo-50/90 to-white p-4 shadow-sm ring-1 ring-indigo-100 sm:p-5">
