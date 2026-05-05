@@ -20,9 +20,6 @@ const Navbar = () => {
   const [searchInput, setSearchInput] = useState(() =>
     location.pathname === '/' ? (searchParams.get('q') ?? '') : ''
   );
-  const [open, setOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-  const inputRef = useRef();
 
 
   const navItems = useMemo(
@@ -61,10 +58,6 @@ const Navbar = () => {
   }, [profileOpen]);
 
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-
-  useEffect(() => {
     if (!isLoggedIn) setProfileOpen(false);
   }, [isLoggedIn]);
 
@@ -79,7 +72,6 @@ const Navbar = () => {
     const q = searchInput.trim();
     navigate({ pathname: '/', search: q ? `?q=${encodeURIComponent(q)}` : '' });
     setMobileOpen(false);
-    setOpen(false);
   };
 
   const handleLogout = () => {
