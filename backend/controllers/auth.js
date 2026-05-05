@@ -201,6 +201,7 @@ export const postLoginResend = async (req, res, next) => {
 
     res.status(200).json({
       message: "OTP resent",
+      expiresIn: Math.floor(OTP_TTL_MS / 1000)
     });
   } catch (err) {
     next(err);

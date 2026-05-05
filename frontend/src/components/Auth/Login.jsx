@@ -93,7 +93,7 @@ const Login = () => {
       setMaskedEmail(data.maskedEmail || "");
       setMaskedPhone(data.maskedPhone || "");
       setDemoOtp(data.demoOtp ?? null);
-      const sec = Number(data.expiresIn) || 600;
+      const sec = Number(data.expiresIn) || 120;
       setOtpExpiresAt(Date.now() + sec * 1000);
       setDigits(emptyDigits());
       setStep("otp");
