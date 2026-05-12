@@ -14,8 +14,18 @@ import Orders from '../components/orders/Orders'
 import Profile from '../components/profile/Profile'
 import Wishlist from '../components/wishlist/Wishlist'
 import Help from '../components/help/Help'
+import AdminGuard from '../layout/AdminGuard'
+import AdminDashboard from '../components/admin/AdminDashboard'
+import AdminUsers from '../components/admin/AdminUsers'
+import AdminProducts from '../components/admin/AdminProducts'
+import AdminOrders from '../components/admin/AdminOrders'
+import AdminAnalytics from '../components/admin/AdminAnalytics'
+import AdminInventory from '../components/admin/AdminInventory'
+import AdminCoupons from '../components/admin/AdminCoupons'
+import AdminSettings from '../components/admin/AdminSettings'
+import { AdminDarkModeProvider } from '../context/AdminDarkModeContext.jsx'
 import PrivateRoute from '../layout/PrivateRoute'
-
+import ErrorPage from '../components/error/ErrorPage'
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +35,7 @@ export const router = createBrowserRouter([
         <App />
       </AuthGuard>
     ),
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -71,7 +82,50 @@ export const router = createBrowserRouter([
         element: <Help />,
       },
     ]
-  }, {
+  },
+  {
+    path: '/admin',
+    element: (
+      <AuthGuard>
+        <AdminGuard>
+          <AdminDarkModeProvider>
+            <AdminDashboard />
+          </AdminDarkModeProvider>
+        </AdminGuard>
+      </AuthGuard>
+    ),
+    children: [
+      {
+        path: 'users',
+        element: <AdminUsers />,
+      },
+      {
+        path: 'products',
+        element: <AdminProducts />,
+      },
+      {
+        path: 'orders',
+        element: <AdminOrders />,
+      },
+      {
+        path: 'analytics',
+        element: <AdminAnalytics />,
+      },
+      {
+        path: 'inventory',
+        element: <AdminInventory />,
+      },
+      {
+        path: 'coupons',
+        element: <AdminCoupons />,
+      },
+      {
+        path: 'settings',
+        element: <AdminSettings />,
+      },
+    ]
+  },
+  {
     path: 'login',
     element: <Login />
   },

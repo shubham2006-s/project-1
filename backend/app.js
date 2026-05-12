@@ -6,6 +6,9 @@ dotenv.config({path: ".env"});
   import mongoose from "mongoose"
   import cors from "cors";
   import UserRoutes from "./routes/User.js";
+  import ProductRoutes from "./routes/Product.js";
+  import OrderRoutes from "./routes/Order.js";
+  import AdminRoutes from "./routes/Admin.js";
 
   const app = express();
   const PORT = process.env.PORT || 3000;
@@ -23,6 +26,9 @@ dotenv.config({path: ".env"});
 
   app.use("/api/auth", AuthRoutes);
   app.use("/user", UserRoutes);
+  app.use("/api/products", ProductRoutes);
+  app.use("/api/orders", OrderRoutes);
+  app.use("/api/admin", AdminRoutes);
 
   app.use((error, req, res, next) => {
     console.log(error);

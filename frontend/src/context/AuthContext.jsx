@@ -6,6 +6,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const logoutTimer = useRef(null);
 
   // 🔥 logout
@@ -59,7 +60,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const decoded = jwtDecode(token);
@@ -68,24 +72,23 @@ export const AuthProvider = ({ children }) => {
         logout();
       } else {
         setIsLoggedIn(true);
-        startAutoLogout(token); // ✅ resume timer
+
+        const storedUser = localStorage.getItem("user");
+
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+
+        startAutoLogout(token);
       }
     } catch {
       logout();
     }
 
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        setUser(null);
-      }
-    }
+    setLoading(false);
   }, []);
-
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout,loading }}>
       {children}
     </AuthContext.Provider>
   );

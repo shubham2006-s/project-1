@@ -31,7 +31,7 @@ export const postSignUp = async (req, res, next) => {
       password: hashPassword,
     });
     const result = await user.save();
-    await sendEmailOTP(email, result._id.toString(),"signup",name);
+    await sendEmailOTP(email, result._id.toString(), "signup", name);
     res.status(201).json({ message: "User created", userId: result._id });
   } catch (error) {
     if (!error.statusCode) {
@@ -64,8 +64,8 @@ export const postLogin = async (req, res, next) => {
         userId: user._id.toString(),
       },
       JWT_SECRET,
-      { expiresIn: "10s" }
-    );  
+      { expiresIn: "1h" }
+    );
 
     res.status(200).json({
       message: "Successfully logged in",
@@ -75,6 +75,7 @@ export const postLogin = async (req, res, next) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -86,14 +87,16 @@ export const postLogin = async (req, res, next) => {
 };
 
 export const postLoginRequest = async (req, res, next) => {
-  const { email, password } = req.body;
 
+  const email = String(req.body.email)
+  const password = String(req.body.password)
+  
   try {
     const user = await User.findOne({ email });
-    if (!user) throw new Error("Invalid credentials");
-
+    if (!user) throw new Error("User not found");
+    
     const isEqual = await bcrypt.compare(password, user.password);
-    if (!isEqual) throw new Error("Invalid credentials");
+    if (!isEqual) throw new Error("Password incorrect");
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
 
@@ -106,17 +109,18 @@ export const postLoginRequest = async (req, res, next) => {
       userId: user._id.toString(),
       name: user.name,
       email: user.email,
+      role: user.role,
       attempts: 0,
       expiresAt: Date.now() + OTP_TTL_MS,
     });
 
     // 📩 send email
-    await sendEmailOTP(user.email, otp,"login");
+    await sendEmailOTP(user.email, otp, "login");
 
     res.status(200).json({
       message: "OTP sent",
       maskedEmail: maskEmail(user.email),
-      expiresIn: Math.floor(OTP_TTL_MS / 1000) ,
+      expiresIn: Math.floor(OTP_TTL_MS / 1000),
     });
   } catch (err) {
     next(err);
@@ -155,6 +159,7 @@ export const postLoginVerify = async (req, res, next) => {
       {
         email: entry.email,
         userId: entry.userId,
+        role: entry.role,
       },
       JWT_SECRET,
       { expiresIn: "1h" }
@@ -168,6 +173,7 @@ export const postLoginVerify = async (req, res, next) => {
         id: entry.userId,
         name: entry.name,
         email: entry.email,
+        role: entry.role,
       },
     });
   } catch (err) {
@@ -197,7 +203,7 @@ export const postLoginResend = async (req, res, next) => {
 
     loginOtpChallenges.set(key, entry);
 
-    await sendEmailOTP(entry.email, otp,"login");
+    await sendEmailOTP(entry.email, otp, "login");
 
     res.status(200).json({
       message: "OTP resent",
@@ -231,7 +237,7 @@ export const postForgotPasswordRequest = async (req, res, next) => {
       expiresAt: Date.now() + OTP_TTL_MS,
     });
 
-    await sendEmailOTP(user.email, otp,"forgot-password");
+    await sendEmailOTP(user.email, otp, "forgot-password");
 
     return res.status(200).json({
       message: "If this email exists, we sent a reset code.",

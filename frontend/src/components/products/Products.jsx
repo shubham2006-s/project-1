@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiFilter, FiSearch } from "react-icons/fi";
 import HeroSlider from "./HeroSlider";
 import ProductCard from "./ProductCard";
-
+import API from "../../util/api";
 
 const badgeFromPrice = (price) => {
   if (price <= 500) return "Value";
@@ -19,11 +19,11 @@ const brandFromTitle = (title) => {
 };
 
 const normalizeExternalProduct = (p) => {
-  const id = p?.id != null ? `api-${p.id}` : `api-${Math.random().toString(16).slice(2)}`;
+  const id = p?._id || `api-${Math.random().toString(16).slice(2)}`;
   const price = Number(p?.price) || 999;
-  const mrp = Math.round(price * 1.35);
-  const rate = Number(p?.rating?.rate) || 4.2;
-  const count = Number(p?.rating?.count) || 120;
+  const mrp = Number(p?.mrp) || Math.round(price * 1.35);
+  const rate = Number(p?.rating) || 4.2;
+  const count = Number(p?.reviews) || 120;
   const title = String(p?.title || "Product");
   const category = String(p?.category || "General");
   const image = String(p?.image || "");
@@ -31,14 +31,17 @@ const normalizeExternalProduct = (p) => {
   return {
     id,
     title,
-    brand: brandFromTitle(title),
+    brand: p?.brand || brandFromTitle(title),
     category: category[0]?.toUpperCase() + category.slice(1),
-    price: Math.round(price * 100),
-    mrp: Math.round(mrp * 100),
+    price,
+    mrp,
     rating: Math.max(3.8, Math.min(4.9, Math.round(rate * 10) / 10)),
     reviews: Math.max(20, count),
-    badge: badgeFromPrice(price),
+    badge: p?.badge || badgeFromPrice(price),
     image,
+    stock: p?.stock ?? 0,
+    stockStatus: p?.stockStatus || "in stock",
+    lowStockThreshold: p?.lowStockThreshold || 5,
   };
 };
 
@@ -176,6 +179,8 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const navigate = useNavigate();
+
   const categories = useMemo(() => {
     const set = new Set(products.map((p) => p.category));
     return ["All", ...Array.from(set)];
@@ -189,9 +194,8 @@ const Products = () => {
         setLoading(true);
         setError("");
 
-        const res = await fetch("https://fakestoreapi.com/products");
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const data = await res.json();
+        const res = await API.get("/api/products");
+        const data = res.data;
         const normalized = Array.isArray(data) ? data.map(normalizeExternalProduct) : [];
 
         if (!cancelled) {
@@ -263,36 +267,39 @@ const Products = () => {
   }, [products, query, category, sort]);
 
   useEffect(() => {
-    const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const cards = cardRefs.current.filter(Boolean);
 
-    if (prefersReduced) {
-      cardRefs.current.forEach((el) => {
-        if (!el) return;
-        el.classList.remove("opacity-0", "translate-y-3");
-        el.classList.add("opacity-100", "translate-y-0");
-      });
-      return;
-    }
+    cards.forEach((card) => {
+      card.classList.add("opacity-0", "translate-y-3");
+      card.classList.remove("opacity-100", "translate-y-0");
+    });
 
-    const io = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          const el = e.target;
-          el.classList.remove("opacity-0", "translate-y-3");
-          el.classList.add("opacity-100", "translate-y-0");
-          io.unobserve(el);
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove("opacity-0", "translate-y-3");
+
+            entry.target.classList.add(
+              "opacity-100",
+              "translate-y-0"
+            );
+
+            observer.unobserve(entry.target);
+          }
+        });
       },
-      { rootMargin: "120px 0px" }
+      {
+        threshold: 0.1,
+      }
     );
 
-    cardRefs.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
-  }, [filtered.length]);
+    cards.forEach((card) => {
+      observer.observe(card);
+    });
+
+    return () => observer.disconnect();
+  }, [filtered]);
 
   return (
     <div className="min-h-screen bg-slate-50">

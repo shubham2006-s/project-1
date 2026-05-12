@@ -1,7 +1,7 @@
 import React, { Fragment, useContext, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
-import { getAccountKey, useOrders } from "../../context/OrderContext";
+import { useOrders } from "../../context/OrderContext";
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -91,6 +91,95 @@ const UPI_APPS = [
   { id: "paytmupi", label: "Paytm UPI" },
 ];
 
+const COUPONS = {
+  SAVE10: {
+    label: "SAVE10",
+    description: "Get 10% off your order",
+    type: "percent",
+    value: 10,
+  },
+  FLAT200: {
+    label: "FLAT200",
+    description: "Save ₹200 on orders above ₹1500",
+    type: "flat",
+    value: 200,
+    minimum: 1500,
+  },
+  WELCOME50: {
+    label: "WELCOME50",
+    description: "Flat ₹50 off for your first order",
+    type: "flat",
+    value: 50,
+  },
+};
+
+const OfferActivate = ({
+  couponCode,
+  setCouponCode,
+  appliedCoupon,
+  offerMessage,
+  onApply,
+  onRemove,
+  disabled,
+}) => (
+  <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-slate-950">Apply promo code</p>
+          <p className="text-xs text-slate-500">Enter a code to unlock an offer before checkout.</p>
+        </div>
+        {appliedCoupon ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+          >
+            Remove code
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <input
+          value={couponCode}
+          onChange={(e) => setCouponCode(e.target.value)}
+          disabled={Boolean(appliedCoupon) || disabled}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+          placeholder="Enter code e.g. SAVE10"
+        />
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={Boolean(appliedCoupon) || disabled}
+          className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Apply
+        </button>
+      </div>
+
+      <div className="space-y-2 text-sm">
+        {offerMessage ? (
+          <p className="text-sm font-semibold text-emerald-700">{offerMessage}</p>
+        ) : null}
+        <div className="grid gap-2 sm:grid-cols-3">
+          {Object.values(COUPONS).map((coupon) => (
+            <button
+              key={coupon.label}
+              type="button"
+              onClick={() => setCouponCode(coupon.label)}
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-100"
+            >
+              <p className="font-black">{coupon.label}</p>
+              <p className="text-[11px] text-slate-500">{coupon.description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const Checkout = () => {
   const { user } = useContext(AuthContext);
   const { addOrder } = useOrders();
@@ -98,7 +187,11 @@ const Checkout = () => {
   const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
   const [orderMeta, setOrderMeta] = useState({ id: "", total: 0 });
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [offerMessage, setOfferMessage] = useState("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -160,6 +253,53 @@ const Checkout = () => {
       /^\d{2}\/\d{2}$/.test(form.cardExpiry.trim()) &&
       /^\d{3,4}$/.test(form.cardCvv.trim()));
 
+  const getCouponDiscount = (coupon, subtotal) => {
+    if (!coupon) return 0;
+    if (coupon.minimum && subtotal < coupon.minimum) return 0;
+    if (coupon.type === "percent") {
+      return Math.round((subtotal * coupon.value) / 100);
+    }
+    if (coupon.type === "flat") {
+      return coupon.value;
+    }
+    return 0;
+  };
+
+  const discountAmount = getCouponDiscount(appliedCoupon, totals.subtotal);
+  const totalWithDiscount = Math.max(0, totals.subtotal - discountAmount);
+
+  const handleApplyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    const coupon = COUPONS[code];
+
+    if (!code) {
+      setOfferMessage("Please enter a promo code.");
+      return;
+    }
+
+    if (!coupon) {
+      setAppliedCoupon(null);
+      setOfferMessage("Sorry, that code is invalid. Try SAVE10, FLAT200 or WELCOME50.");
+      return;
+    }
+
+    if (coupon.minimum && totals.subtotal < coupon.minimum) {
+      setAppliedCoupon(null);
+      setOfferMessage(
+        `Spend ${money(coupon.minimum)} to use ${coupon.label}. Your current cart total is ${money(totals.subtotal)}.`
+      );
+      return;
+    }
+
+    setAppliedCoupon(coupon);
+    setOfferMessage(`Applied ${coupon.label}: ${coupon.description}`);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setOfferMessage("Promo code removed.");
+  };
+
   const paymentReviewText = useMemo(() => {
     const bankName = NET_BANKS.find((b) => b.id === form.netBank)?.name;
     const walletName = WALLET_PROVIDERS.find((w) => w.id === form.walletProvider)?.label;
@@ -187,10 +327,11 @@ const Checkout = () => {
     form.walletProvider,
   ]);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    setPlacingOrder(true);
     const id = `SN-${Date.now().toString(36).toUpperCase().slice(-8)}`;
     const lineSnapshot = items.map((l) => ({
-      id: l.id,
+      ProductId: l.id,
       title: l.title,
       image: l.image,
       quantity: l.quantity,
@@ -198,33 +339,58 @@ const Checkout = () => {
       color: l.color,
       size: l.size,
     }));
-    addOrder({
-      id,
-      userKey: getAccountKey(user),
-      total: totals.subtotal,
-      paymentLabel: paymentReviewText,
-      status: "Processing",
-      placedAt: new Date().toISOString(),
-      shipping: {
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        address: form.address.trim(),
-        city: form.city.trim(),
-        state: form.state.trim(),
-        pin: form.pin.trim(),
-      },
-      lines: lineSnapshot,
-    });
-    setOrderMeta({ id, total: totals.subtotal });
-    clearCart();
-    setOrderComplete(true);
-    showToast({
-      variant: "order",
-      title: "Order confirmed",
-      description: `${id} · Total ${money(totals.subtotal)} · Confirmation sent to ${form.email.trim()}`,
-      duration: 6500,
-    });
+    
+    try {
+      const paymentMethod = form.payment === 'cod'
+        ? 'COD'
+        : form.payment === 'card'
+        ? 'Card'
+        : form.payment === 'upi'
+        ? 'UPI'
+        : form.payment === 'netbanking'
+        ? 'Netbanking'
+        : form.payment === 'wallet'
+        ? 'Wallet'
+        : 'Online';
+
+      const paymentStatus = paymentMethod === 'COD' ? 'pending' : 'paid';
+
+      await addOrder({
+        id,
+        total: totalWithDiscount,
+        paymentLabel: paymentReviewText,
+        paymentMethod,
+        paymentStatus,
+        orderStatus: 'pending',
+        shipping: {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          pin: form.pin.trim(),
+        },
+        CartItems: lineSnapshot,
+      });
+      setOrderMeta({ id, total: totalWithDiscount });
+      clearCart();
+      setOrderComplete(true);
+      showToast({
+        variant: "order",
+        title: "Order confirmed",
+        description: `${id} · Total ${money(totalWithDiscount)} · Confirmation sent to ${form.email.trim()}`,
+        duration: 6500,
+      });
+    } catch (error) {
+      showToast({
+        variant: "error",
+        title: "Order failed",
+        description: "Failed to place order. Please try again.",
+      });
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   if (items.length === 0 && !orderComplete) {
@@ -836,11 +1002,21 @@ const Checkout = () => {
                   ) : (
                     <button
                       type="button"
+                      disabled={placingOrder}
                       onClick={handlePlaceOrder}
-                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-md ring-1 ring-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-500 motion-safe:duration-200"
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-md ring-1 ring-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 motion-safe:duration-200"
                     >
-                      <FiLock />
-                      Place order
+                      {placingOrder ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Placing...
+                        </>
+                      ) : (
+                        <>
+                          <FiLock />
+                          Place order
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -856,32 +1032,49 @@ const Checkout = () => {
             }
           >
             <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm lg:sticky lg:top-24">
-              <h2 className="text-sm font-black text-slate-950">Order summary</h2>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between gap-3 font-semibold text-slate-700">
-                  <dt>Subtotal</dt>
-                  <dd className="tabular-nums text-slate-950">{money(totals.subtotal)}</dd>
-                </div>
-                <div className="flex items-center justify-between gap-3 font-semibold text-slate-700">
-                  <dt>MRP</dt>
-                  <dd className="tabular-nums text-slate-500 line-through">{money(totals.mrpTotal)}</dd>
-                </div>
-                {totals.savings > 0 ? (
-                  <div className="flex items-center justify-between gap-3 font-extrabold text-emerald-700">
-                    <dt>Savings</dt>
-                    <dd className="tabular-nums">− {money(totals.savings)}</dd>
+              <OfferActivate
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+                appliedCoupon={appliedCoupon}
+                offerMessage={offerMessage}
+                onApply={handleApplyCoupon}
+                onRemove={handleRemoveCoupon}
+                disabled={items.length === 0}
+              />
+              <div className="mt-4 rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm">
+                <h2 className="text-sm font-black text-slate-950">Order summary</h2>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-3 font-semibold text-slate-700">
+                    <dt>Subtotal</dt>
+                    <dd className="tabular-nums text-slate-950">{money(totals.subtotal)}</dd>
                   </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-500">
-                  <dt>Shipping</dt>
-                  <dd className="font-extrabold text-emerald-700">FREE</dd>
-                </div>
-                <div className="h-px bg-slate-200" />
-                <div className="flex items-center justify-between gap-3 text-base font-black text-slate-950">
-                  <dt>Total</dt>
-                  <dd className="tabular-nums">{money(totals.subtotal)}</dd>
-                </div>
-              </dl>
+                  <div className="flex items-center justify-between gap-3 font-semibold text-slate-700">
+                    <dt>MRP</dt>
+                    <dd className="tabular-nums text-slate-500 line-through">{money(totals.mrpTotal)}</dd>
+                  </div>
+                  {totals.savings > 0 ? (
+                    <div className="flex items-center justify-between gap-3 font-extrabold text-emerald-700">
+                      <dt>Savings</dt>
+                      <dd className="tabular-nums">− {money(totals.savings)}</dd>
+                    </div>
+                  ) : null}
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700">
+                      <dt>{appliedCoupon.label} discount</dt>
+                      <dd className="tabular-nums text-emerald-700">− {money(discountAmount)}</dd>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-500">
+                    <dt>Shipping</dt>
+                    <dd className="font-extrabold text-emerald-700">FREE</dd>
+                  </div>
+                  <div className="h-px bg-slate-200" />
+                  <div className="flex items-center justify-between gap-3 text-base font-black text-slate-950">
+                    <dt>Total</dt>
+                    <dd className="tabular-nums">{money(totalWithDiscount)}</dd>
+                  </div>
+                </dl>
+              </div>
               <div className="mt-4 flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                 <FiLock className="shrink-0 text-slate-500" />
                 SSL-secured demo checkout — no real charges.

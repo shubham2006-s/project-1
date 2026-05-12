@@ -166,7 +166,11 @@ const Login = () => {
         duration: 5500,
       });
       await new Promise((r) => window.setTimeout(r, 420));
-      navigate("/");
+      if (data.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setOtpShakeKey((k) => k + 1);
       const msg = err?.response?.data?.message || "Invalid code. Try again.";
@@ -411,7 +415,7 @@ const Login = () => {
                   <h2 className="text-xl font-semibold tracking-tight text-slate-900">Check email &amp; messages</h2>
                   <p className="mt-1 text-sm text-slate-600">
                     Enter the 6-digit code we sent to your <span className="font-semibold text-slate-800">email</span>{" "}
-                    
+
                   </p>
                 </div>
 

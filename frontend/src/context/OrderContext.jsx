@@ -7,70 +7,65 @@ import React, {
   useState,
 } from "react";
 import { AuthContext } from "./AuthContext";
-
-const STORAGE_KEY = "shopnow_orders_v1";
-
-/** Stable key for associating orders with the current account (demo). */
-export function getAccountKey(user) {
-  if (user?.email) return String(user.email).toLowerCase().trim();
-  if (typeof window !== "undefined") {
-    const id = localStorage.getItem("userId");
-    if (id) return `id:${id}`;
-  }
-  return "guest";
-}
-
-function loadOrders() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {
-    /* ignore */
-  }
-  return [];
-}
+import API from "../util/api";
 
 const OrderContext = createContext(null);
 
 export function OrderProvider({ children }) {
   const { user } = useContext(AuthContext);
-  const [orders, setOrders] = useState(loadOrders);
-  const accountKey = useMemo(() => getAccountKey(user), [user]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchOrders = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const response = await API.get("/api/orders");
+      setOrders(response.data.orders);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const addOrder = useCallback(async (orderData) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    } catch {
-      /* ignore */
+
+      const response = await API.post(
+        "/api/orders/place",
+        orderData
+      );
+
+      fetchOrders();
+
+      return response.data.order;
+
+    } catch (error) {
+
+      console.log(error.response?.data);
+
+      alert(
+        error.response?.data?.message ||
+        "Order failed"
+      );
+
+      throw error;
     }
-  }, [orders]);
-
-  const myOrders = useMemo(() => {
-    return orders
-      .filter((o) => o.userKey === accountKey)
-      .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
-  }, [orders, accountKey]);
-
-  const addOrder = useCallback((order) => {
-    setOrders((prev) => [
-      {
-        ...order,
-        placedAt: order.placedAt || new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-  }, []);
+  }, [fetchOrders]);
 
   const value = useMemo(
     () => ({
-      orders: myOrders,
+      orders,
       addOrder,
-      accountKey,
+      loading,
+      refetchOrders: fetchOrders,
     }),
-    [myOrders, addOrder, accountKey]
+    [orders, addOrder, loading, fetchOrders]
   );
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;

@@ -59,16 +59,16 @@ const Orders = () => {
         ) : (
           <ul className="mt-10 flex flex-col gap-4">
             {orders.map((order) => {
-              const expanded = openId === order.id;
-              const lineCount = order.lines?.length ?? 0;
+              const expanded = openId === order._id;
+              const lineCount = order.CartItems?.length ?? 0;
               return (
                 <li
-                  key={order.id}
+                  key={order._id}
                   className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm"
                 >
                   <button
                     type="button"
-                    onClick={() => setOpenId((v) => (v === order.id ? null : order.id))}
+                    onClick={() => setOpenId((v) => (v === order._id ? null : order._id))}
                     className="flex w-full items-start gap-4 p-4 text-left transition hover:bg-slate-50/80 sm:items-center sm:p-5"
                   >
                     <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
@@ -77,10 +77,10 @@ const Orders = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-extrabold text-slate-950">
-                          {order.id}
+                          {order._id}
                         </span>
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100">
-                          {order.status || "Processing"}
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide ring-1 ${order.orderStatus === 'delivered' ? 'bg-emerald-50 text-emerald-800 ring-emerald-100' : order.orderStatus === 'shipped' ? 'bg-blue-50 text-blue-800 ring-blue-100' : order.orderStatus === 'processing' ? 'bg-sky-50 text-sky-800 ring-sky-100' : order.orderStatus === 'cancelled' ? 'bg-rose-50 text-rose-800 ring-rose-100' : 'bg-yellow-50 text-amber-800 ring-amber-100'}`}>
+                          {order.orderStatus || order.status || 'pending'}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-500">
@@ -117,7 +117,12 @@ const Orders = () => {
                         <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
                           Payment
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-800">{order.paymentLabel}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-800">{order.paymentLabel}</p>
+                          <span className={`rounded-full px-2 py-1 text-[11px] font-extrabold uppercase tracking-wide ${order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800 ring-emerald-100' : order.paymentStatus === 'failed' ? 'bg-red-100 text-red-800 ring-red-100' : order.paymentStatus === 'refunded' ? 'bg-rose-100 text-rose-800 ring-rose-100' : 'bg-yellow-100 text-yellow-800 ring-yellow-100'}`}>
+                            {order.paymentStatus || 'pending'}
+                          </span>
+                        </div>
                       </div>
 
                       {order.shipping ? (
@@ -135,7 +140,7 @@ const Orders = () => {
 
 
                       <ul className="mt-3 divide-y divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200">
-                        {(order.lines || []).map((line, idx) => (
+                        {(order.CartItems || []).map((line, idx) => (
                           <li key={`${line.id}-${idx}`} className="flex gap-3 p-3 first:rounded-t-xl last:rounded-b-xl">
                             <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                               {line.image ? (
@@ -171,7 +176,7 @@ const Orders = () => {
                           <FiHash />
                           Order reference for support
                         </span>
-                        <span className="font-mono font-bold text-slate-700">{order.id}</span>
+                        <span className="font-mono font-bold text-slate-700">{order._id}</span>
                       </div>
                     </div>
                   ) : null}

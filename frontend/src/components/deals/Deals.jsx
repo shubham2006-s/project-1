@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiClock, FiTag, FiTrendingDown } from "react-icons/fi";
+import API from "../../util/api";
 
 const money = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
@@ -89,20 +90,18 @@ const FALLBACK_DEALS = [
 ];
 
 const normalizeExternalDeal = (p, idx) => {
-  const id = p?.id != null ? `deal-api-${p.id}` : `deal-api-${idx}-${Math.random().toString(16).slice(2)}`;
-  const title = String(p?.title || "Product");
+  const id = p?._id || p?.id || `deal-${idx}`;
+   const title = String(p?.title || "Product");
   const brand = String(p?.brand || "Brand");
   const category = String(p?.category || "General");
-  const image = String(p?.thumbnail || "");
+  const image = String(p?.image || p?.thumbnail || "");
 
-  const base = Number(p?.price) || 999;
-  const stock = Number(p?.stock) || 60;
+  const mrp = Number(p?.mrp) || Number(p?.price) || 999;
+  const price = Number(p?.price) || Math.max(199, Math.round(mrp * 0.8));
   const rating = Number(p?.rating) || 4.2;
+  const reviews = Number(p?.reviews) || 0;
 
-  const offPct = clamp(18 + ((idx * 11) % 45), 18, 62);
-  const mrp = Math.round(base * (1 + offPct / 70));
-  const price = Math.max(199, Math.round(mrp * (1 - offPct / 100)));
-
+  const stock = Number(p?.stock) || 60;
   const stockTotal = clamp(Math.round(stock * 1.2), 20, 200);
   const stockLeft = clamp(Math.round(stock * (0.25 + ((idx % 6) / 10))), 3, stockTotal);
 
@@ -113,10 +112,10 @@ const normalizeExternalDeal = (p, idx) => {
     title,
     brand,
     category: category[0]?.toUpperCase() + category.slice(1),
-    price: Math.round(price * 100),
-    mrp: Math.round(mrp * 100),
-    rating: Math.max(3.8, Math.min(4.9, Math.round(rating * 10) / 10)),
-    reviews: Math.max(40, stock),
+    price: Math.round(price),
+    mrp: Math.round(mrp),
+    rating: Math.max(3.8, Math.min(5, Math.round(rating * 10) / 10)),
+    reviews: Math.max(40, reviews),
     stockLeft,
     stockTotal,
     endsAt,
@@ -304,16 +303,10 @@ const Deals = ({ limit = 8, showHeader = true }) => {
         setLoading(true);
         setError("");
 
-        const res = await fetch("https://dummyjson.com/products?limit=32");
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const data = await res.json();
+        const res = await API.get("/api/products");
+        const raw = Array.isArray(res.data) ? res.data : [];
 
-        const raw = Array.isArray(data.products) ? data.products : [];
-        const filtered = raw.filter(
-          (p) => !["groceries", "fragrances", "skincare"].includes(String(p?.category || "").toLowerCase())
-        );
-
-        const normalized = filtered.map(normalizeExternalDeal);
+        const normalized = raw.map(normalizeExternalDeal);
 
         const sorted = normalized
           .map((d) => ({
@@ -329,7 +322,7 @@ const Deals = ({ limit = 8, showHeader = true }) => {
       } catch (e) {
         if (!cancelled) {
           setDeals(FALLBACK_DEALS.slice(0, limit));
-          setError("Could not load live deals. Showing a curated fallback.");
+          setError("Could not load deals from the backend. Showing a curated fallback.");
         }
       } finally {
         if (!cancelled) setLoading(false);

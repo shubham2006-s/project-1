@@ -17,10 +17,29 @@ API.interceptors.request.use((req) => {
 API.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response && err.response.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login"; // redirect
+    if (
+      err.response &&
+      err.response.status === 401
+    ) {
+
+      const currentPath =
+        window.location.pathname;
+
+      const publicRoutes = [
+        "/login",
+        "/signup",
+        "/forgot-password",
+      ];
+
+      if (
+        !publicRoutes.includes(currentPath)
+      ) {
+        localStorage.removeItem("token");
+
+        window.location.href = "/login";
+      }
     }
+
     return Promise.reject(err);
   }
 );

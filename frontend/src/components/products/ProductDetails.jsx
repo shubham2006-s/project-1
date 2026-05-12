@@ -11,6 +11,7 @@ import {
   FiStar,
   FiTruck,
 } from "react-icons/fi";
+import API from "../../util/api.js";
 
 const money = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
@@ -181,6 +182,26 @@ const ProductDetails = () => {
   const infoRef = useRef(null);
   const mainImgRef = useRef(null);
 
+  const [fetchedProduct, setFetchedProduct] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (id) {
+        setLoading(true);
+        try {
+          const response = await API.get(`/api/products/${id}`);
+          setFetchedProduct(response.data);
+        } catch (error) {
+          console.error("Error fetching product:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
   const product = useMemo(() => {
     const fromState = location?.state?.product;
     if (fromState && typeof fromState === "object") {
@@ -233,9 +254,56 @@ const ProductDetails = () => {
       };
     }
 
+    // If fetched from database
+    if (fetchedProduct) {
+      const base = fetchedProduct;
+      return {
+        id: base._id,
+        title: base.title,
+        brand: base.brand,
+        category: base.category,
+        price: base.price,
+        mrp: base.mrp,
+        rating: base.rating,
+        reviews: base.reviews,
+        badge: base.badge,
+        images: [base.image], // Single image from DB
+        stock: base.stock ?? 0,
+        stockStatus: base.stockStatus || "in stock",
+        lowStockThreshold: base.lowStockThreshold || 5,
+        colors: [
+          { name: "Black", swatch: "bg-slate-900" },
+          { name: "Sky", swatch: "bg-sky-500" },
+          { name: "Mint", swatch: "bg-emerald-500" },
+        ],
+        sizes: ["Standard"],
+        highlights: [
+          "Fast delivery and easy returns",
+          "Premium quality materials",
+          "Top-rated by customers",
+          "Secure packaging",
+        ],
+        details: `Details for ${base.title}. Category: ${base.category}. Brand: ${base.brand}.`,
+        shipping: {
+          delivery: "Delivery in 2–4 days",
+          returns: "7-day easy return",
+          warranty: "6-month manufacturing warranty",
+        },
+        specs: [
+          { k: "Category", v: base.category },
+          { k: "Brand", v: base.brand },
+          { k: "Care", v: "Follow label/instructions" },
+          { k: "In the box", v: "1 unit" },
+        ],
+        reviewItems: [
+          { name: "Verified buyer", stars: base.rating, text: "Great product from our database." },
+        ],
+      };
+    }
+
     if (!id) return MOCK_PRODUCTS[0];
     return MOCK_PRODUCTS.find((p) => p.id === id) ?? MOCK_PRODUCTS[0];
-  }, [id, location?.state?.product]);
+  }, [id, location?.state?.product, fetchedProduct]);
 
   const [activeImg, setActiveImg] = useState(0);
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name ?? "Default");
@@ -419,6 +487,24 @@ const ProductDetails = () => {
                 <p className="text-sm font-semibold text-slate-600">
                   {product.reviews} reviews
                 </p>
+                <div className="mt-2">
+                  <span
+                    className={[
+                      "rounded-full px-3 py-1 text-xs font-extrabold text-white ring-1",
+                      product.stock === 0
+                        ? "bg-red-600 ring-red-400/30"
+                        : product.stock <= (product.lowStockThreshold || 5)
+                          ? "bg-amber-500 ring-amber-400/30"
+                          : "bg-emerald-600 ring-emerald-400/30",
+                    ].join(" ")}
+                  >
+                    {product.stock === 0
+                      ? "✕ Out of Stock"
+                      : product.stock <= (product.lowStockThreshold || 5)
+                        ? `⚠ Only ${product.stock} Left`
+                        : `✓ In Stock (${product.stock})`}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-5 flex items-end justify-between gap-4">
@@ -515,9 +601,12 @@ const ProductDetails = () => {
                   <button
                     type="button"
                     onClick={handleAddToCart}
+                    disabled={product.stock === 0}
                     className={[
                       "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold",
-                      "bg-slate-950 text-white shadow-sm ring-1 ring-slate-900/10",
+                      product.stock === 0
+                        ? "bg-slate-300 text-white cursor-not-allowed shadow-sm ring-1 ring-slate-200"
+                        : "bg-slate-950 text-white shadow-sm ring-1 ring-slate-900/10", ,
                       "motion-safe:transition motion-safe:duration-300",
                       "hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-md active:translate-y-0",
                       "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
@@ -525,7 +614,11 @@ const ProductDetails = () => {
                     ].join(" ")}
                   >
                     <FiShoppingCart />
-                    {cartFlash ? "Added to cart" : "Add to cart"}
+                    {product.stock === 0
+                      ? "Out of Stock"
+                      : cartFlash
+                        ? "Added to cart"
+                        : "Add to cart"}
                   </button>
                   <button
                     type="button"

@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   FiArrowRight,
   FiBell,
@@ -22,6 +21,7 @@ import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useToast } from "../../context/ToastContext";
+import API from "../../util/api";
 
 const cardBase =
   "rounded-2xl bg-white p-5 ring-1 ring-slate-200 shadow-sm motion-safe:transition motion-safe:duration-300";
@@ -78,7 +78,9 @@ const Profile = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+
     if (pwSubmitting) return;
+
     if (newPassword.length < 6) {
       showToast({
         variant: "info",
@@ -88,6 +90,7 @@ const Profile = () => {
       });
       return;
     }
+
     if (newPassword !== confirmPassword) {
       showToast({
         variant: "info",
@@ -97,31 +100,41 @@ const Profile = () => {
       });
       return;
     }
+
     try {
       setPwSubmitting(true);
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/user/change-password`,
-        { currentPassword, newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+
+      await API.post(
+        "/user/change-password",
+        {
+          currentPassword,
+          newPassword,
+        }
       );
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setShowPwForm(false);
+
       showToast({
         variant: "success",
         title: "Password updated",
         description: "Your account password has been changed successfully.",
         duration: 4800,
       });
+
     } catch (error) {
+
       showToast({
         variant: "info",
         title: "Update failed",
-        description: error?.response?.data?.message || "Could not change password.",
+        description:
+          error?.response?.data?.message ||
+          "Could not change password.",
         duration: 5000,
       });
+
     } finally {
       setPwSubmitting(false);
     }
@@ -290,9 +303,9 @@ const Profile = () => {
                   <FiLock className="text-slate-600" />
                   <span>
                     <span className="block text-sm font-extrabold text-slate-950">Change password</span>
-                      <span className="text-xs font-medium text-slate-500">
-                        Securely update your password
-                      </span>
+                    <span className="text-xs font-medium text-slate-500">
+                      Securely update your password
+                    </span>
                   </span>
                 </span>
                 <FiChevronRight className="text-slate-400" />

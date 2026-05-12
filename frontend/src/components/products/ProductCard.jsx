@@ -10,7 +10,7 @@ const money = (n) =>
 const ProductCard = ({ p, index, cardRef }) => {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
-  const saved = isWishlisted(p.id);
+  const saved = isWishlisted(p._id || p.id);
   const articleRef = useRef(null);
   const [addedFlash, setAddedFlash] = useState(false);
   const off = Math.max(0, Math.round(((p.mrp - p.price) / p.mrp) * 100));
@@ -48,12 +48,14 @@ const ProductCard = ({ p, index, cardRef }) => {
         "motion-safe:transition-all motion-safe:duration-500 motion-safe:ease-out",
         "opacity-0 translate-y-3",
       ].join(" ")}
-      style={{ transitionDelay: `${Math.min(index * 60, 360)}ms` }}
+      style={{
+        transitionDelay: `${Math.min(index * 60, 360)}ms`,
+        animationFillMode: "forwards",
+      }}
     >
       <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-100">
         <Link
-          to={`/product/${p.id}`}
-          state={{ product: p }}
+          to={`/product/${p._id || p.id}`}
           className="absolute inset-0 block"
           aria-label={`View ${p.title}`}
         >
@@ -77,8 +79,25 @@ const ProductCard = ({ p, index, cardRef }) => {
               {off}% OFF
             </span>
           ) : null}
+          {p.stockStatus && (
+            <span
+              className={[
+                "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white ring-1 backdrop-blur",
+                p.stock === 0
+                  ? "bg-red-600/90 ring-red-400/30"
+                  : p.stock <= (p.lowStockThreshold || 5)
+                    ? "bg-amber-600/90 ring-amber-400/30"
+                    : "bg-emerald-600/90 ring-emerald-400/30",
+              ].join(" ")}
+            >
+              {p.stock === 0
+                ? "✕ Out of Stock"
+                : p.stock <= (p.lowStockThreshold || 5)
+                  ? `${p.stock} Left`
+                  : "✓ In Stock"}
+            </span>
+          )}
         </div>
-
         <button
           type="button"
           onClick={handleWishlist}
@@ -135,18 +154,23 @@ const ProductCard = ({ p, index, cardRef }) => {
           <button
             type="button"
             onClick={handleAddToCart}
+            disabled={p.stock === 0}
             className={[
               "inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-extrabold",
-              "bg-slate-950 text-white shadow-sm ring-1 ring-slate-900/10",
+              p.stock === 0
+                ? "bg-slate-400 text-white cursor-not-allowed opacity-60"
+                : "bg-slate-950 text-white shadow-sm ring-1 ring-slate-900/10",
               "motion-safe:transition motion-safe:duration-300",
-              "hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-md active:translate-y-0",
+              p.stock === 0
+                ? ""
+                : "hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-md active:translate-y-0",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
               addedFlash ? "motion-safe:scale-105 motion-safe:ring-2 motion-safe:ring-emerald-400/90" : "",
             ].join(" ")}
-            aria-label="Add to cart"
+            aria-label={p.stock === 0 ? "Product out of stock" : "Add to cart"}
           >
             <FiShoppingCart className={addedFlash ? "motion-safe:animate-pulse" : ""} />
-            {addedFlash ? "Added" : "Add"}
+            {p.stock === 0 ? 'Out of Stock' : addedFlash ? "Added" : "Add"}
           </button>
         </div>
       </div>

@@ -21,7 +21,6 @@ const Navbar = () => {
     location.pathname === '/' ? (searchParams.get('q') ?? '') : ''
   );
 
-
   const navItems = useMemo(
     () => [
       { label: 'Home', to: '/' },
@@ -69,8 +68,19 @@ const Navbar = () => {
 
   const submitSearch = (e) => {
     e.preventDefault();
+    
     const q = searchInput.trim();
-    navigate({ pathname: '/', search: q ? `?q=${encodeURIComponent(q)}` : '' });
+
+    navigate({
+      pathname:
+        location.pathname === "/new-arrivals"
+          ? "/new-arrivals"
+          : "/",
+      search: q
+        ? `?q=${encodeURIComponent(q)}`
+        : "",
+    });
+
     setMobileOpen(false);
   };
 
@@ -283,6 +293,28 @@ const Navbar = () => {
                         <span className="ml-auto text-xs font-extrabold text-rose-200">{wishlistCount}</span>
                       ) : null}
                     </Link>
+
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-white/90 hover:bg-white/10"
+                        onClick={() => setProfileOpen(false)}
+                        role="menuitem"
+                      >
+                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 ring-1 ring-white/10">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/80">
+                            <path
+                              d="M12 1l3 6h6l-5 4 2 7-6-4-6 4 2-7-5-4h6z"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                        Admin Dashboard
+                      </Link>
+                    )}
 
                     <button
                       type="button"

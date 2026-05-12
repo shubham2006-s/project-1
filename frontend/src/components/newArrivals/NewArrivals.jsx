@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../products/ProductCard";
+import API from "../../util/api";
 
 const FALLBACK_PRODUCTS = [
   {
@@ -57,6 +58,7 @@ const FALLBACK_PRODUCTS = [
   },
 ];
 
+
 const badgeFromPrice = (price) => {
   if (price <= 500) return "Value";
   if (price <= 1200) return "Trending";
@@ -71,26 +73,41 @@ const brandFromTitle = (title) => {
 };
 
 const normalizeExternalProduct = (p) => {
-  const id = p?.id != null ? `api-${p.id}` : `api-${Math.random().toString(16).slice(2)}`;
+  const id = p?._id || p?.id;
+
   const price = Number(p?.price) || 999;
-  const mrp = Math.round(price * 1.35);
-  const rate = Number(p?.rating) || 4.2;
-  const stock = Number(p?.stock) || 120;
+  const mrp = Number(p?.mrp) || Math.round(price * 1.35);
+
   const title = String(p?.title || "Product");
+
   const category = String(p?.category || "General");
-  const image = String(p?.thumbnail || "");
-  const brand = String(p?.brand || brandFromTitle(title));
+
+  const image =
+    p?.image?.trim() ||
+    p?.thumbnail?.trim() ||
+    "https://via.placeholder.com/300x300?text=No+Image";
 
   return {
     id,
+
     title,
-    brand,
-    category: category[0]?.toUpperCase() + category.slice(1),
-    price: Math.round(price * 100),
-    mrp: Math.round(mrp * 100),
-    rating: Math.max(3.8, Math.min(4.9, Math.round(rate * 10) / 10)),
-    reviews: Math.max(20, stock),
-    badge: badgeFromPrice(price),
+
+    brand: p?.brand || "Brand",
+
+    category:
+      category[0]?.toUpperCase() +
+      category.slice(1),
+
+    price,
+
+    mrp,
+
+    rating: Number(p?.rating) || 4.2,
+
+    reviews: Number(p?.reviews) || 120,
+
+    badge: p?.badge || "New",
+
     image,
   };
 };
@@ -115,6 +132,10 @@ const NewArrivals = ({ limit = 50, showHeader = true }) => {
   const [error, setError] = useState("");
   const cardRefs = useRef([]);
 
+  const [searchParams] = useSearchParams();
+
+  const query = searchParams.get("q") || "";
+
   useEffect(() => {
     let cancelled = false;
 
@@ -123,10 +144,12 @@ const NewArrivals = ({ limit = 50, showHeader = true }) => {
         setLoading(true);
         setError("");
 
-        const res = await fetch("https://dummyjson.com/products?limit=50");
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const data = await res.json();
-        const normalized = Array.isArray(data.products) ? data.products.map(normalizeExternalProduct) : [];
+        const res = await API.get("/api/products/new-arrivals");
+
+        const data = res.data;
+        const normalized = Array.isArray(data)
+          ? data.map(normalizeExternalProduct)
+          : [];
         const filtered = normalized.filter(
           (p) => !["groceries", "fragrances", "skincare"].includes(p.category.toLowerCase())
         );
@@ -153,7 +176,19 @@ const NewArrivals = ({ limit = 50, showHeader = true }) => {
     };
   }, [limit]);
 
-  const items = useMemo(() => products.slice(0, limit), [products, limit]);
+  const items = useMemo(() => {
+    return products
+      .filter((p) => {
+        const q = query.toLowerCase();
+
+        return (
+          p.title.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+        );
+      })
+      .slice(0, limit);
+  }, [products, query, limit]);
 
   useEffect(() => {
     const prefersReduced =
